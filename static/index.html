@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>One Night Werewolf</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>One Night Werewolf</h1>
+
+      <section id="join-section" class="panel">
+        <h2>Join a Room</h2>
+        <div class="row">
+          <label>
+            Room ID
+            <input id="room-id" type="text" maxlength="24" placeholder="friends-night" />
+          </label>
+          <label>
+            Name
+            <input id="player-name" type="text" maxlength="24" placeholder="Your name" />
+          </label>
+          <button id="join-btn" type="button">Join</button>
+        </div>
+        <p class="hint">Max 12 players. Host configures N+3 roles for N players, then starts.</p>
+      </section>
+
+      <section id="game-section" class="panel hidden">
+        <div class="row between">
+          <h2 id="status-title">Room</h2>
+          <div class="row">
+            <button id="save-config-btn" type="button" class="hidden">Save Config</button>
+            <button id="start-btn" type="button" class="hidden">Start Game</button>
+            <button id="reset-btn" type="button" class="hidden">Reset</button>
+          </div>
+        </div>
+
+        <p id="status-line" class="status"></p>
+        <p id="start-blockers" class="hint"></p>
+
+        <div id="config-panel" class="panel soft hidden">
+          <h3>Role Config (Host)</h3>
+          <div id="config-grid" class="config-grid"></div>
+          <div class="row">
+            <label>
+              Timer (sec)
+              <input id="timer-seconds" type="number" min="3" max="120" step="1" />
+            </label>
+          </div>
+          <p id="config-summary" class="hint"></p>
+        </div>
+
+        <div id="config-readonly" class="panel soft hidden">
+          <h3>Configured Roles</h3>
+          <ul id="config-readonly-list" class="list"></ul>
+          <p id="config-readonly-summary" class="hint"></p>
+        </div>
+
+        <div class="grid-two">
+          <div>
+            <h3>Players</h3>
+            <ul id="players-list" class="list"></ul>
+          </div>
+          <div>
+            <h3>Your Role</h3>
+            <p id="self-name" class="status">You: -</p>
+            <p id="self-role" class="status">No role yet.</p>
+            <h3>Private Notes</h3>
+            <ul id="notes-list" class="list"></ul>
+          </div>
+        </div>
+
+        <h3>Action</h3>
+        <div id="action-box" class="panel soft"></div>
+
+        <h3>Chat</h3>
+        <div id="chat-log" class="chat"></div>
+        <div class="row">
+          <input id="chat-input" type="text" maxlength="300" placeholder="Type a message..." />
+          <button id="chat-send" type="button">Send</button>
+        </div>
+
+        <h3>Result</h3>
+        <pre id="result-box" class="result">No result yet.</pre>
+      </section>
+
+      <p id="error-box" class="error"></p>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
