@@ -1616,8 +1616,8 @@ function maybeTriggerJumpscare(room, self) {
   }
 
   const winner = room.result.winner;
-  const resolvedRole = String(self.final_role || self.original_role || "").trim();
-  const isWerewolfSide = resolvedRole === "Werewolf" || resolvedRole === "Minion";
+  const effectiveRole = self.final_role || self.original_role || "";
+  const isWerewolfSide = effectiveRole === "Werewolf" || effectiveRole === "Minion";
 
   let imagePath = "";
   let audioPath = "";
