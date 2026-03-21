@@ -14,8 +14,11 @@ from .config import AppConfig, ConfigError
 from .game import GameError, hub
 from .models import (
     CALL_ORDER,
+    DEFAULT_DISCUSSION_TIMER_SECONDS,
     DEFAULT_ROLE_TIMER_SECONDS,
+    MAX_DISCUSSION_TIMER_SECONDS,
     MAX_ROLE_TIMER_SECONDS,
+    MIN_DISCUSSION_TIMER_SECONDS,
     MIN_ROLE_TIMER_SECONDS,
     ROLE_CONSTRAINTS,
     ROLES_THAT_DO_NOT_WAKE,
@@ -82,6 +85,9 @@ async def call_order() -> dict[str, Any]:
         "default_role_timer_seconds": DEFAULT_ROLE_TIMER_SECONDS,
         "min_role_timer_seconds": MIN_ROLE_TIMER_SECONDS,
         "max_role_timer_seconds": MAX_ROLE_TIMER_SECONDS,
+        "default_discussion_timer_seconds": DEFAULT_DISCUSSION_TIMER_SECONDS,
+        "min_discussion_timer_seconds": MIN_DISCUSSION_TIMER_SECONDS,
+        "max_discussion_timer_seconds": MAX_DISCUSSION_TIMER_SECONDS,
     }
 
 

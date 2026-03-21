@@ -40,6 +40,10 @@ DEFAULT_ROLE_TIMER_SECONDS = 12
 MIN_ROLE_TIMER_SECONDS = 3
 MAX_ROLE_TIMER_SECONDS = 120
 
+DEFAULT_DISCUSSION_TIMER_SECONDS = 90
+MIN_DISCUSSION_TIMER_SECONDS = 10
+MAX_DISCUSSION_TIMER_SECONDS = 900
+
 
 def default_role_config() -> Dict[str, int]:
     return {role: 0 for role in ALL_ROLES}
@@ -66,6 +70,8 @@ class Room:
     center_cards: List[str] = field(default_factory=list)
     configured_roles: Dict[str, int] = field(default_factory=default_role_config)
     role_timer_seconds: int = DEFAULT_ROLE_TIMER_SECONDS
+    discussion_timer_seconds: int = DEFAULT_DISCUSSION_TIMER_SECONDS
+    discussion_deadline: Optional[float] = None
     night_order: List[str] = field(default_factory=list)
     turn_index: int = 0
     active_role_started_at: Optional[float] = None

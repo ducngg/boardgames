@@ -12,7 +12,10 @@ from fastapi import WebSocket
 from .models import (
     ALL_ROLES,
     CALL_ORDER,
+    DEFAULT_DISCUSSION_TIMER_SECONDS,
+    MAX_DISCUSSION_TIMER_SECONDS,
     MAX_ROLE_TIMER_SECONDS,
+    MIN_DISCUSSION_TIMER_SECONDS,
     MIN_ROLE_TIMER_SECONDS,
     ROLE_CONSTRAINTS,
     ROLES_THAT_DO_NOT_WAKE,
@@ -235,6 +238,20 @@ class WerewolfHub:
             )
         return timer_seconds
 
+    def _normalize_discussion_timer_seconds(self, raw_timer: Any, fallback: int) -> int:
+        if raw_timer is None:
+            return fallback
+
+        timer_seconds = self._parse_int(raw_timer, "discussion_timer_seconds")
+        if timer_seconds < MIN_DISCUSSION_TIMER_SECONDS or timer_seconds > MAX_DISCUSSION_TIMER_SECONDS:
+            raise GameError(
+                (
+                    "discussion_timer_seconds must be between "
+                    f"{MIN_DISCUSSION_TIMER_SECONDS} and {MAX_DISCUSSION_TIMER_SECONDS}."
+                )
+            )
+        return timer_seconds
+
     def _configure_roles(self, room: Room, player_id: str, message: Dict[str, Any]) -> None:
         self._require_host(room, player_id)
         if room.phase != "lobby":
@@ -245,9 +262,14 @@ class WerewolfHub:
             message.get("timer_seconds"),
             room.role_timer_seconds,
         )
+        discussion_timer_seconds = self._normalize_discussion_timer_seconds(
+            message.get("discussion_timer_seconds"),
+            room.discussion_timer_seconds,
+        )
 
         room.configured_roles = normalized_roles
         room.role_timer_seconds = timer_seconds
+        room.discussion_timer_seconds = discussion_timer_seconds
 
         room.notes.setdefault(player_id, []).append(
             f"Role config saved. Total roles: {room.configured_role_total}."
@@ -306,6 +328,7 @@ class WerewolfHub:
         room.chat_log.clear()
         room.active_role_started_at = None
         room.active_role_deadline = None
+        room.discussion_deadline = None
         room.night_order = [role for role in CALL_ORDER if room.configured_roles.get(role, 0) > 0]
 
         for index, assigned_player_id in enumerate(player_ids):
@@ -340,6 +363,7 @@ class WerewolfHub:
                 room.pending_actions.clear()
                 room.active_role_started_at = None
                 room.active_role_deadline = None
+                room.discussion_deadline = time.time() + room.discussion_timer_seconds
                 self._add_system_chat(room, "Day phase started. Vote for who to eliminate.")
                 return
 
@@ -712,6 +736,7 @@ class WerewolfHub:
         room.pending_actions.clear()
         room.active_role_started_at = None
         room.active_role_deadline = None
+        room.discussion_deadline = None
         self._add_action_history(room, f"Voting resolved. Winner: {winner}.")
         room.result = {
             "winner": winner,
@@ -745,6 +770,7 @@ class WerewolfHub:
         room.night_order.clear()
         room.active_role_started_at = None
         room.active_role_deadline = None
+        room.discussion_deadline = None
         room.pending_actions.clear()
         room.action_history.clear()
         room.votes.clear()
@@ -836,6 +862,10 @@ class WerewolfHub:
         if room.phase == "night" and room.active_role_deadline is not None:
             role_time_left = max(0, int(room.active_role_deadline - time.time() + 0.999))
 
+        discussion_time_left: Optional[int] = None
+        if room.phase == "day" and room.discussion_deadline is not None:
+            discussion_time_left = max(0, int(room.discussion_deadline - time.time() + 0.999))
+
         start_blockers = self._start_blockers(room)
         action_payload = self._action_payload_for_player(room, viewer_id)
 
@@ -859,6 +889,12 @@ class WerewolfHub:
                 "configured_role_total": room.configured_role_total,
                 "role_constraints": ROLE_CONSTRAINTS,
                 "role_timer_seconds": room.role_timer_seconds,
+                "discussion_timer_seconds": room.discussion_timer_seconds,
+                "discussion_timer_default_seconds": DEFAULT_DISCUSSION_TIMER_SECONDS,
+                "discussion_timer_min_seconds": MIN_DISCUSSION_TIMER_SECONDS,
+                "discussion_timer_max_seconds": MAX_DISCUSSION_TIMER_SECONDS,
+                "discussion_remaining_seconds": discussion_time_left,
+                "discussion_deadline_epoch": room.discussion_deadline,
                 "active_role_remaining_seconds": role_time_left,
                 "active_role_deadline_epoch": room.active_role_deadline,
             },
@@ -956,6 +992,7 @@ class WerewolfHub:
             "max_players": room.max_players,
             "configured_role_total": room.configured_role_total,
             "role_timer_seconds": room.role_timer_seconds,
+            "discussion_timer_seconds": room.discussion_timer_seconds,
             "players": [
                 {
                     "id": player.id,

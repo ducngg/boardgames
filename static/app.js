@@ -54,8 +54,18 @@ const I18N = {
     "status.phase": "Phase: {phase}",
     "status.wake": "Wake: {role}",
     "status.timer": "Timer: {seconds}s",
+    "status.discussion": "Discussion: {seconds}s",
+    "status.voteTime": "Discussion timer ended — vote time.",
     "status.readyStart": "Ready to start.",
     "status.cannotStart": "Cannot start: {blockers}",
+    "notice.waiting": "Waiting for other players...",
+    "notice.needAction": "Your turn: action needed now.",
+    "notice.passive": "Your role action has been completed.",
+    "notice.skipped": "Your action was skipped (timer ended).",
+    "notice.vote": "Vote now.",
+    "notice.voteDone": "Vote submitted. Waiting for others.",
+    "notice.reveal": "Round ended. Check result details.",
+    "notice.lobby": "Waiting in lobby.",
     "phase.lobby": "Lobby",
     "phase.night": "Night",
     "phase.day": "Day",
@@ -63,6 +73,7 @@ const I18N = {
     "config.title": "Role Config (Host)",
     "config.readonlyTitle": "Configured Roles",
     "config.timer": "Timer (sec)",
+    "config.discussionTimer": "Discussion Timer (sec)",
     "config.summary": "Configured roles: {configured} • Required: {required}",
     "config.none": "No roles configured.",
     "section.players": "Players",
@@ -74,6 +85,7 @@ const I18N = {
     "self.you": "You: {name}{hostTag}",
     "self.youDefault": "You: -",
     "self.noRoleYet": "No role assigned yet.",
+    "self.originalLabel": "Original role",
     "self.original": "Original role: {role}",
     "self.finalSuffix": " • Final role: {role}",
     "tag.host": "host",
@@ -215,8 +227,18 @@ const I18N = {
     "status.phase": "Giai đoạn: {phase}",
     "status.wake": "Đang gọi: {role}",
     "status.timer": "Đếm giờ: {seconds}s",
+    "status.discussion": "Thảo luận: {seconds}s",
+    "status.voteTime": "Hết giờ thảo luận — đến giờ bỏ phiếu.",
     "status.readyStart": "Sẵn sàng bắt đầu.",
     "status.cannotStart": "Chưa thể bắt đầu: {blockers}",
+    "notice.waiting": "Đang chờ người chơi khác...",
+    "notice.needAction": "Đến lượt bạn: cần hành động ngay.",
+    "notice.passive": "Hành động vai của bạn đã hoàn tất.",
+    "notice.skipped": "Hành động của bạn đã bị bỏ qua (hết giờ).",
+    "notice.vote": "Hãy bỏ phiếu ngay.",
+    "notice.voteDone": "Đã gửi phiếu. Đang chờ người khác.",
+    "notice.reveal": "Ván đã kết thúc. Xem chi tiết kết quả.",
+    "notice.lobby": "Đang chờ trong sảnh.",
     "phase.lobby": "Sảnh",
     "phase.night": "Đêm",
     "phase.day": "Ngày",
@@ -224,6 +246,7 @@ const I18N = {
     "config.title": "Cấu hình vai (Chủ phòng)",
     "config.readonlyTitle": "Vai đã cấu hình",
     "config.timer": "Thời gian (giây)",
+    "config.discussionTimer": "Thời gian thảo luận (giây)",
     "config.summary": "Tổng vai: {configured} • Cần: {required}",
     "config.none": "Chưa cấu hình vai nào.",
     "section.players": "Người chơi",
@@ -235,6 +258,7 @@ const I18N = {
     "self.you": "Bạn: {name}{hostTag}",
     "self.youDefault": "Bạn: -",
     "self.noRoleYet": "Chưa được chia vai.",
+    "self.originalLabel": "Vai gốc",
     "self.original": "Vai gốc: {role}",
     "self.finalSuffix": " • Vai cuối: {role}",
     "tag.host": "chủ phòng",
@@ -440,10 +464,13 @@ const startButton = document.getElementById("start-btn");
 const resetButton = document.getElementById("reset-btn");
 const statusTitle = document.getElementById("status-title");
 const statusLine = document.getElementById("status-line");
+const discussionLine = document.getElementById("discussion-line");
+const stateNotice = document.getElementById("state-notice");
 const startBlockers = document.getElementById("start-blockers");
 const configPanel = document.getElementById("config-panel");
 const configGrid = document.getElementById("config-grid");
 const timerInput = document.getElementById("timer-seconds");
+const discussionTimerInput = document.getElementById("discussion-timer-seconds");
 const configSummary = document.getElementById("config-summary");
 const configReadonly = document.getElementById("config-readonly");
 const configReadonlyList = document.getElementById("config-readonly-list");
@@ -687,6 +714,7 @@ function applyStaticTranslations() {
   setText("config-title", "config.title");
   setText("config-readonly-title", "config.readonlyTitle");
   setText("timer-label", "config.timer");
+  setText("discussion-timer-label", "config.discussionTimer");
   setText("players-title", "section.players");
   setText("your-role-title", "section.yourRole");
   setText("notes-title", "section.notes");
@@ -834,6 +862,50 @@ function getRemainingSeconds(room) {
   return Math.max(0, Math.ceil(delta));
 }
 
+function getDiscussionRemainingSeconds(room) {
+  if (!room || room.phase !== "day" || !room.discussion_deadline_epoch) {
+    return null;
+  }
+  const delta = room.discussion_deadline_epoch - Date.now() / 1000;
+  return Math.max(0, Math.ceil(delta));
+}
+
+function getNoticeState(room, self) {
+  const notes = Array.isArray(self.known_info) ? self.known_info : [];
+  const lastNote = notes.length > 0 ? notes[notes.length - 1] : "";
+
+  if (room.phase === "reveal") {
+    return { level: "success", text: t("notice.reveal") };
+  }
+  if (room.phase === "lobby") {
+    return { level: "secondary", text: t("notice.lobby") };
+  }
+  if (self.action) {
+    if (self.action.kind === "vote") {
+      if (self.vote_submitted) {
+        return { level: "success", text: t("notice.voteDone") };
+      }
+      return { level: "primary", text: t("notice.vote") };
+    }
+    return { level: "primary", text: t("notice.needAction") };
+  }
+  if (/timer ended\. your action was skipped\./i.test(lastNote)) {
+    return { level: "warning", text: t("notice.skipped") };
+  }
+  if (
+    /(you copied|you robbed|you swapped|seer saw|insomniac check|werewolves are|other werewolves|other mason|you are the only mason|you are the only werewolf|there are no werewolves)/i.test(lastNote)
+  ) {
+    return { level: "success", text: t("notice.passive") };
+  }
+  return { level: "secondary", text: t("notice.waiting") };
+}
+
+function renderStateNotice(room, self) {
+  const notice = getNoticeState(room, self);
+  stateNotice.className = `alert alert-${notice.level} py-2 px-3`;
+  stateNotice.textContent = notice.text;
+}
+
 function renderState() {
   if (!state.current) {
     return;
@@ -844,6 +916,7 @@ function renderState() {
 
   statusTitle.textContent = t("status.roomTitle", { roomId: room.id });
   renderStatusLine(room);
+  renderStateNotice(room, self);
   renderStartBlockers(room, self);
 
   saveConfigButton.classList.toggle("hidden", !self.can_configure);
@@ -869,6 +942,22 @@ function renderStatusLine(room) {
     parts.push(t("status.timer", { seconds }));
   }
   statusLine.textContent = parts.join(" • ");
+
+  const discussionSeconds = getDiscussionRemainingSeconds(room);
+  if (room.phase === "day") {
+    if (discussionSeconds !== null && discussionSeconds > 0) {
+      discussionLine.textContent = t("status.discussion", { seconds: discussionSeconds });
+      discussionLine.classList.remove("text-danger", "fw-bold");
+      discussionLine.classList.add("text-primary");
+    } else {
+      discussionLine.textContent = t("status.voteTime");
+      discussionLine.classList.remove("text-primary");
+      discussionLine.classList.add("text-danger", "fw-bold");
+    }
+  } else {
+    discussionLine.textContent = "";
+    discussionLine.classList.remove("text-primary", "text-danger", "fw-bold");
+  }
 }
 
 function renderStartBlockers(room, self) {
@@ -934,6 +1023,7 @@ function renderRoleConfig(room, self) {
   }
 
   timerInput.value = String(room.role_timer_seconds ?? 12);
+  discussionTimerInput.value = String(room.discussion_timer_seconds ?? 90);
 
   const summary = t("config.summary", {
     configured: room.configured_role_total,
@@ -993,12 +1083,28 @@ function renderSelfState(self) {
   selfName.classList.add("self-name");
 
   if (self.original_role) {
-    let roleText = t("self.original", { role: roleLabel(self.original_role) });
+    selfRole.classList.remove("text-muted");
+    selfRole.classList.add("alert", "alert-primary", "py-2", "px-3", "mb-2");
+    selfRole.textContent = "";
+
+    const originalBadge = document.createElement("span");
+    originalBadge.className = "badge text-bg-primary me-2";
+    originalBadge.textContent = t("self.originalLabel");
+
+    const originalText = document.createElement("span");
+    originalText.textContent = roleLabel(self.original_role);
+
+    selfRole.appendChild(originalBadge);
+    selfRole.appendChild(originalText);
+
     if (self.final_role) {
-      roleText += t("self.finalSuffix", { role: roleLabel(self.final_role) });
+      const finalText = document.createElement("span");
+      finalText.textContent = t("self.finalSuffix", { role: roleLabel(self.final_role) });
+      selfRole.appendChild(finalText);
     }
-    selfRole.textContent = roleText;
   } else {
+    selfRole.classList.remove("alert", "alert-primary", "py-2", "px-3", "mb-2");
+    selfRole.classList.add("text-muted");
     selfRole.textContent = t("self.noRoleYet");
   }
 
@@ -1357,6 +1463,7 @@ saveConfigButton.addEventListener("click", () => {
     type: "configure_roles",
     roles,
     timer_seconds: Number(timerInput.value || 0),
+    discussion_timer_seconds: Number(discussionTimerInput.value || 0),
   });
 });
 

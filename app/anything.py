@@ -233,7 +233,7 @@ class AnythingHub:
         )
         user_prompt = (
             f"Host request: {prompt}\n"
-            f"Generate exactly {item_count} items. Keep each item concise and easy-to-guess."
+            f"Generate exactly {item_count} items. Keep each item concise. Be creative!"
         )
 
         try:
