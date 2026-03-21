@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guess My Anything</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="panel">
+        <h1>Guess My Anything</h1>
+        <p class="hint">Simple actions only: Send, Reveal, Reset.</p>
+      </section>
+
+      <section id="join-section" class="panel">
+        <h2>Join Room</h2>
+        <div class="form-grid">
+          <label class="field">
+            <span>Room ID</span>
+            <input id="room-id" type="text" maxlength="24" placeholder="anything-night" />
+          </label>
+          <label class="field">
+            <span>Name</span>
+            <input id="player-name" type="text" maxlength="24" placeholder="Your name" />
+          </label>
+          <button id="join-btn" type="button">Join</button>
+        </div>
+      </section>
+
+      <section id="game-section" class="panel hidden">
+        <p id="room-line" class="status"></p>
+
+        <div id="host-controls" class="panel soft hidden">
+          <h3>Host Controls</h3>
+          <label class="field">
+            <span>Prompt</span>
+            <textarea
+              id="prompt-input"
+              rows="3"
+              maxlength="300"
+              placeholder="A random city for guessing, not too hard"
+            ></textarea>
+          </label>
+          <div class="row">
+            <button id="send-btn" type="button">Send</button>
+            <button id="reveal-btn" type="button">Reveal</button>
+            <button id="reset-btn" type="button">Reset</button>
+          </div>
+        </div>
+
+        <h3>Players</h3>
+        <ul id="players-list" class="list"></ul>
+
+        <h3>Your Secret Item</h3>
+        <p id="self-item" class="status">No item assigned yet.</p>
+        <p class="hint">Each player gets a different private item. Guess other players' items.</p>
+
+        <div id="revealed-section" class="panel soft hidden">
+          <h3>Revealed Items</h3>
+          <ul id="revealed-list" class="list"></ul>
+        </div>
+      </section>
+
+      <p id="error-box" class="error"></p>
+    </main>
+
+    <script src="/static/anything.js"></script>
+  </body>
+</html>

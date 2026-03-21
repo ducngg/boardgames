@@ -8,28 +8,37 @@
   </head>
   <body>
     <main class="container">
-      <h1>One Night Werewolf</h1>
+      <header class="topbar panel">
+        <h1 id="app-title">One Night Werewolf</h1>
+        <label class="lang-picker" for="language-select">
+          <span id="language-label">Language</span>
+          <select id="language-select" aria-label="Language selector">
+            <option value="en">English</option>
+            <option value="vi">Tiếng Việt</option>
+          </select>
+        </label>
+      </header>
 
       <section id="join-section" class="panel">
-        <h2>Join a Room</h2>
-        <div class="row">
-          <label>
-            Room ID
+        <h2 id="join-title">Join a Room</h2>
+        <div class="form-grid">
+          <label class="field">
+            <span id="room-id-label">Room ID</span>
             <input id="room-id" type="text" maxlength="24" placeholder="friends-night" />
           </label>
-          <label>
-            Name
+          <label class="field">
+            <span id="player-name-label">Name</span>
             <input id="player-name" type="text" maxlength="24" placeholder="Your name" />
           </label>
           <button id="join-btn" type="button">Join</button>
         </div>
-        <p class="hint">Max 12 players. Host configures N+3 roles for N players, then starts.</p>
+        <p id="join-hint" class="hint">Max 12 players. Host configures N+3 roles for N players, then starts.</p>
       </section>
 
       <section id="game-section" class="panel hidden">
-        <div class="row between">
+        <div class="row between header-actions">
           <h2 id="status-title">Room</h2>
-          <div class="row">
+          <div class="row actions-row">
             <button id="save-config-btn" type="button" class="hidden">Save Config</button>
             <button id="start-btn" type="button" class="hidden">Start Game</button>
             <button id="reset-btn" type="button" class="hidden">Reset</button>
@@ -40,11 +49,11 @@
         <p id="start-blockers" class="hint"></p>
 
         <div id="config-panel" class="panel soft hidden">
-          <h3>Role Config (Host)</h3>
+          <h3 id="config-title">Role Config (Host)</h3>
           <div id="config-grid" class="config-grid"></div>
           <div class="row">
-            <label>
-              Timer (sec)
+            <label class="field compact">
+              <span id="timer-label">Timer (sec)</span>
               <input id="timer-seconds" type="number" min="3" max="120" step="1" />
             </label>
           </div>
@@ -52,36 +61,36 @@
         </div>
 
         <div id="config-readonly" class="panel soft hidden">
-          <h3>Configured Roles</h3>
+          <h3 id="config-readonly-title">Configured Roles</h3>
           <ul id="config-readonly-list" class="list"></ul>
           <p id="config-readonly-summary" class="hint"></p>
         </div>
 
         <div class="grid-two">
           <div>
-            <h3>Players</h3>
+            <h3 id="players-title">Players</h3>
             <ul id="players-list" class="list"></ul>
           </div>
           <div>
-            <h3>Your Role</h3>
+            <h3 id="your-role-title">Your Role</h3>
             <p id="self-name" class="status">You: -</p>
             <p id="self-role" class="status">No role yet.</p>
-            <h3>Private Notes</h3>
+            <h3 id="notes-title">Private Notes</h3>
             <ul id="notes-list" class="list"></ul>
           </div>
         </div>
 
-        <h3>Action</h3>
+        <h3 id="action-title">Action</h3>
         <div id="action-box" class="panel soft"></div>
 
-        <h3>Chat</h3>
+        <h3 id="chat-title">Chat</h3>
         <div id="chat-log" class="chat"></div>
         <div class="row">
           <input id="chat-input" type="text" maxlength="300" placeholder="Type a message..." />
           <button id="chat-send" type="button">Send</button>
         </div>
 
-        <h3>Result</h3>
+        <h3 id="result-title">Result</h3>
         <pre id="result-box" class="result">No result yet.</pre>
       </section>
 

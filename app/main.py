@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager, suppress
+from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .anything import AnythingError, anything_hub
+from .config import AppConfig, ConfigError
 from .game import GameError, hub
 from .models import (
     CALL_ORDER,
@@ -16,6 +19,19 @@ from .models import (
     MIN_ROLE_TIMER_SECONDS,
     ROLE_CONSTRAINTS,
     ROLES_THAT_DO_NOT_WAKE,
+)
+
+
+CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.yaml"
+
+try:
+    app_config = AppConfig.load(CONFIG_PATH)
+except ConfigError as exc:
+    raise RuntimeError(f"Failed to load config file at {CONFIG_PATH}: {exc}") from exc
+
+anything_hub.configure_openai(
+    api_key=app_config.openai_api_key,
+    model=app_config.openai_model,
 )
 
 
@@ -38,12 +54,18 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="One Night Werewolf", version="0.2.0", lifespan=lifespan)
+app.state.config = app_config
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/")
 async def index() -> FileResponse:
     return FileResponse("static/index.html")
+
+
+@app.get("/anything")
+async def anything_index() -> FileResponse:
+    return FileResponse("static/anything.html")
 
 
 @app.get("/api/health")
@@ -126,3 +148,54 @@ async def websocket_room(
         if active_player_id:
             await hub.disconnect(normalized_room_id, active_player_id)
             await hub.broadcast_room_state(normalized_room_id)
+
+
+@app.websocket("/ws/anything/{room_id}")
+async def websocket_anything_room(
+    websocket: WebSocket,
+    room_id: str,
+    name: str = Query(min_length=1, max_length=24),
+    player_id: Optional[str] = Query(default=None, min_length=8, max_length=24),
+) -> None:
+    await websocket.accept()
+
+    normalized_room_id = anything_hub.normalize_room_id(room_id)
+    normalized_name = anything_hub.normalize_name(name)
+    active_player_id: Optional[str] = None
+
+    try:
+        _, player = await anything_hub.connect(
+            room_id=normalized_room_id,
+            player_name=normalized_name,
+            player_id=player_id,
+            websocket=websocket,
+        )
+        active_player_id = player.id
+
+        await websocket.send_json(
+            {
+                "type": "welcome",
+                "room_id": normalized_room_id,
+                "player_id": player.id,
+                "name": player.name,
+            }
+        )
+        await anything_hub.broadcast_room_state(normalized_room_id)
+
+        while True:
+            incoming = await websocket.receive_json()
+            try:
+                await anything_hub.process_message(normalized_room_id, player.id, incoming)
+            except AnythingError as exc:
+                await websocket.send_json({"type": "error", "message": str(exc)})
+            else:
+                await anything_hub.broadcast_room_state(normalized_room_id)
+
+    except AnythingError as exc:
+        await websocket.send_json({"type": "error", "message": str(exc)})
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if active_player_id:
+            await anything_hub.disconnect(normalized_room_id, active_player_id)
+            await anything_hub.broadcast_room_state(normalized_room_id)

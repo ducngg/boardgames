@@ -11,6 +11,7 @@ Simple MVP for a 2-way real-time One Night Werewolf room with up to 12 players.
 - Host is a normal player during gameplay (special actions: configure + start)
 - Configurable timer (N seconds) per called night role
 - Reveal includes full action history from the night
+- Language switch in UI (English / Vietnamese)
 - Night wake order implemented:
   - Doppelganger
   - Werewolves
@@ -26,7 +27,7 @@ Simple MVP for a 2-way real-time One Night Werewolf room with up to 12 players.
   - Hunter
   - Tanner
 - Day voting and reveal results
-- Plain HTML/CSS/JS frontend for now
+- Plain HTML/CSS/JS frontend (compact + mobile friendly)
 
 ## Run
 
@@ -39,6 +40,26 @@ uvicorn app.main:app --reload
 
 Open: `http://127.0.0.1:8000`
 
+## Config
+
+Create/update `config.yaml` in project root:
+
+```yaml
+openai_api_key: "YOUR_OPENAI_API_KEY"
+openai_model: "gpt-4o-mini"
+```
+
+`openai_api_key` is required for the `/anything` game mode.
+
+## Guess My Anything
+
+- Open: `http://127.0.0.1:8000/anything`
+- WebSocket: `WS /ws/anything/{room_id}?name=YOUR_NAME[&player_id=EXISTING_ID]`
+- Host actions only:
+  - `send` (includes prompt text, calls OpenAI, privately assigns `N` unique items to `N` players)
+  - `reveal` (reveal all player-item pairs to everyone in the room)
+  - `reset` (clear prompt + private assignments)
+
 ## API/WebSocket
 
 - `GET /api/health`
@@ -46,6 +67,8 @@ Open: `http://127.0.0.1:8000`
 - `GET /api/rooms`
 - `GET /api/rooms/{room_id}`
 - `WS /ws/{room_id}?name=YOUR_NAME[&player_id=EXISTING_ID]`
+- `GET /anything`
+- `WS /ws/anything/{room_id}?name=YOUR_NAME[&player_id=EXISTING_ID]`
 
 Client websocket message types:
 
