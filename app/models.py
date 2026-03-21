@@ -72,6 +72,8 @@ class Room:
     role_timer_seconds: int = DEFAULT_ROLE_TIMER_SECONDS
     discussion_timer_seconds: int = DEFAULT_DISCUSSION_TIMER_SECONDS
     discussion_deadline: Optional[float] = None
+    pending_reveal_deadline: Optional[float] = None
+    pending_reveal_result: Optional[Dict[str, Any]] = None
     night_order: List[str] = field(default_factory=list)
     turn_index: int = 0
     active_role_started_at: Optional[float] = None

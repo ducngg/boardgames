@@ -28,7 +28,7 @@ const ROLE_LABELS = {
     Insomniac: "Mất Ngủ",
     Villager: "Dân Làng",
     Hunter: "Thợ Săn",
-    Tanner: "Thuộc Da",
+    Tanner: "Chán Đời",
   },
 };
 
@@ -56,6 +56,7 @@ const I18N = {
     "status.timer": "Timer: {seconds}s",
     "status.discussion": "Discussion: {seconds}s",
     "status.voteTime": "Discussion timer ended — vote time.",
+    "status.revealIn": "Revealing result in: {seconds}s",
     "status.readyStart": "Ready to start.",
     "status.cannotStart": "Cannot start: {blockers}",
     "notice.waiting": "Waiting for other players...",
@@ -229,6 +230,7 @@ const I18N = {
     "status.timer": "Đếm giờ: {seconds}s",
     "status.discussion": "Thảo luận: {seconds}s",
     "status.voteTime": "Hết giờ thảo luận — đến giờ bỏ phiếu.",
+    "status.revealIn": "Lật kết quả sau: {seconds}s",
     "status.readyStart": "Sẵn sàng bắt đầu.",
     "status.cannotStart": "Chưa thể bắt đầu: {blockers}",
     "notice.waiting": "Đang chờ người chơi khác...",
@@ -293,7 +295,7 @@ const I18N = {
     "result.actionHistory": "Lịch sử hành động:",
     "winner.village": "Dân Làng",
     "winner.werewolfTeam": "Phe Ma Sói",
-    "winner.tanner": "Thuộc Da",
+    "winner.tanner": "Chán Đời",
     "vote.none": "Không bỏ phiếu",
     "error.socket": "Socket chưa kết nối.",
     "error.roomRequired": "Cần nhập mã phòng.",
@@ -452,6 +454,8 @@ const state = {
   playerId: "",
   current: null,
   language: getInitialLanguage(),
+  jumpscareToken: "",
+  jumpscareAudio: null,
 };
 
 const joinSection = document.getElementById("join-section");
@@ -930,6 +934,7 @@ function renderState() {
   renderAction(self.action, self.vote_submitted);
   renderChat(room.chat_log || []);
   renderResult(room.result, room.center_cards, room.action_history);
+  maybeTriggerJumpscare(room, self);
 }
 
 function renderStatusLine(room) {
@@ -945,7 +950,12 @@ function renderStatusLine(room) {
 
   const discussionSeconds = getDiscussionRemainingSeconds(room);
   if (room.phase === "day") {
-    if (discussionSeconds !== null && discussionSeconds > 0) {
+    const pendingRevealSeconds = Number(room.pending_reveal_remaining_seconds ?? 0);
+    if (pendingRevealSeconds > 0) {
+      discussionLine.textContent = t("status.revealIn", { seconds: pendingRevealSeconds });
+      discussionLine.classList.remove("text-primary");
+      discussionLine.classList.add("text-danger", "fw-bold");
+    } else if (discussionSeconds !== null && discussionSeconds > 0) {
       discussionLine.textContent = t("status.discussion", { seconds: discussionSeconds });
       discussionLine.classList.remove("text-danger", "fw-bold");
       discussionLine.classList.add("text-primary");
@@ -1446,6 +1456,74 @@ function renderResult(result, centerCards, actionHistory) {
   }
 
   resultBox.textContent = lines.join("\n");
+}
+
+function ensureJumpscareOverlay() {
+  let overlay = document.getElementById("jumpscare-overlay");
+  if (overlay) {
+    return overlay;
+  }
+
+  overlay = document.createElement("div");
+  overlay.id = "jumpscare-overlay";
+  overlay.style.position = "fixed";
+  overlay.style.inset = "0";
+  overlay.style.zIndex = "9999";
+  overlay.style.background = "rgba(0, 0, 0, 0.95)";
+  overlay.style.display = "none";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+
+  const image = document.createElement("img");
+  image.src = "/assets/werewolf-jumpscare-1.png";
+  image.alt = "Werewolf jumpscare";
+  image.style.maxWidth = "96vw";
+  image.style.maxHeight = "96vh";
+  image.style.objectFit = "contain";
+
+  overlay.appendChild(image);
+  overlay.addEventListener("click", () => {
+    overlay.style.display = "none";
+  });
+
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function maybeTriggerJumpscare(room, self) {
+  if (!room || room.phase !== "reveal" || !room.result) {
+    return;
+  }
+
+  if (room.result.winner !== "Werewolf Team") {
+    return;
+  }
+
+  if (!self || self.final_role === "Werewolf") {
+    return;
+  }
+
+  const token = `${room.id}:${self.id}:${room.result.winner}:${Object.keys(room.result.votes || {}).length}`;
+  if (state.jumpscareToken === token) {
+    return;
+  }
+  state.jumpscareToken = token;
+
+  const overlay = ensureJumpscareOverlay();
+  overlay.style.display = "flex";
+
+  if (!state.jumpscareAudio) {
+    state.jumpscareAudio = new Audio("/assets/werewolf-jumpscare-1.mp3");
+    state.jumpscareAudio.preload = "auto";
+  }
+
+  state.jumpscareAudio.currentTime = 0;
+  state.jumpscareAudio.volume = 1;
+  state.jumpscareAudio.play().catch(() => {});
+
+  window.setTimeout(() => {
+    overlay.style.display = "none";
+  }, 4500);
 }
 
 joinButton.addEventListener("click", connect);

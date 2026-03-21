@@ -59,6 +59,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="One Night Werewolf", version="0.2.0", lifespan=lifespan)
 app.state.config = app_config
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 
 @app.get("/")

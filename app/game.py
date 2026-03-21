@@ -138,6 +138,10 @@ class WerewolfHub:
             now = time.time()
             for room in self.rooms.values():
                 if room.phase != "night":
+                    if room.phase == "day" and room.pending_reveal_deadline is not None:
+                        if now >= room.pending_reveal_deadline:
+                            self._finalize_pending_reveal(room)
+                            timed_out_rooms.append(room.id)
                     continue
                 if room.active_role_deadline is None:
                     continue
@@ -329,6 +333,8 @@ class WerewolfHub:
         room.active_role_started_at = None
         room.active_role_deadline = None
         room.discussion_deadline = None
+        room.pending_reveal_deadline = None
+        room.pending_reveal_result = None
         room.night_order = [role for role in CALL_ORDER if room.configured_roles.get(role, 0) > 0]
 
         for index, assigned_player_id in enumerate(player_ids):
@@ -686,6 +692,8 @@ class WerewolfHub:
     def _submit_vote(self, room: Room, player_id: str, message: Dict[str, Any]) -> None:
         if room.phase != "day":
             raise GameError("Voting is only allowed during day.")
+        if room.pending_reveal_deadline is not None:
+            raise GameError("Votes are locked. Reveal is in progress.")
 
         target = message.get("target_player_id")
         if target is not None and target != "" and target not in room.players:
@@ -732,13 +740,13 @@ class WerewolfHub:
         else:
             winner = "Werewolf Team"
 
-        room.phase = "reveal"
+        room.phase = "day"
         room.pending_actions.clear()
         room.active_role_started_at = None
         room.active_role_deadline = None
         room.discussion_deadline = None
         self._add_action_history(room, f"Voting resolved. Winner: {winner}.")
-        room.result = {
+        room.pending_reveal_result = {
             "winner": winner,
             "eliminated": [room.players[player_id].name for player_id in eliminated],
             "final_roles": {
@@ -753,6 +761,19 @@ class WerewolfHub:
             },
             "action_history": list(room.action_history),
         }
+        room.pending_reveal_deadline = time.time() + 5
+        self._add_system_chat(room, "Votes locked. Revealing result in 5 seconds.")
+
+    def _finalize_pending_reveal(self, room: Room) -> None:
+        if room.pending_reveal_result is None:
+            room.pending_reveal_deadline = None
+            return
+
+        winner = str(room.pending_reveal_result.get("winner", "Unknown"))
+        room.phase = "reveal"
+        room.result = room.pending_reveal_result
+        room.pending_reveal_result = None
+        room.pending_reveal_deadline = None
         self._add_system_chat(room, f"Voting resolved. Winner: {winner}.")
 
     def _set_name(self, room: Room, player_id: str, message: Dict[str, Any]) -> None:
@@ -771,11 +792,13 @@ class WerewolfHub:
         room.active_role_started_at = None
         room.active_role_deadline = None
         room.discussion_deadline = None
+        room.pending_reveal_deadline = None
         room.pending_actions.clear()
         room.action_history.clear()
         room.votes.clear()
         room.chat_log.clear()
         room.result = None
+        room.pending_reveal_result = None
 
         for player in room.players.values():
             player.original_role = None
@@ -866,6 +889,10 @@ class WerewolfHub:
         if room.phase == "day" and room.discussion_deadline is not None:
             discussion_time_left = max(0, int(room.discussion_deadline - time.time() + 0.999))
 
+        reveal_time_left: Optional[int] = None
+        if room.pending_reveal_deadline is not None:
+            reveal_time_left = max(0, int(room.pending_reveal_deadline - time.time() + 0.999))
+
         start_blockers = self._start_blockers(room)
         action_payload = self._action_payload_for_player(room, viewer_id)
 
@@ -895,6 +922,7 @@ class WerewolfHub:
                 "discussion_timer_max_seconds": MAX_DISCUSSION_TIMER_SECONDS,
                 "discussion_remaining_seconds": discussion_time_left,
                 "discussion_deadline_epoch": room.discussion_deadline,
+                "pending_reveal_remaining_seconds": reveal_time_left,
                 "active_role_remaining_seconds": role_time_left,
                 "active_role_deadline_epoch": room.active_role_deadline,
             },
@@ -915,6 +943,9 @@ class WerewolfHub:
         }
 
     def _action_payload_for_player(self, room: Room, viewer_id: str) -> Optional[Dict[str, Any]]:
+        if room.pending_reveal_deadline is not None:
+            return None
+
         if room.phase == "night" and viewer_id in room.pending_actions and room.turn_role:
             role = room.turn_role
             selectable_players = [
