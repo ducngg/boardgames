@@ -121,6 +121,10 @@ class WerewolfHub:
                 self._submit_night_action(room, player_id, message)
             elif message_type == "vote":
                 self._submit_vote(room, player_id, message)
+            elif message_type == "ringring":
+                self._ringring_vote(room, player_id)
+            elif message_type == "done_vote":
+                self._done_vote(room, player_id)
             elif message_type == "chat":
                 self._add_chat(room, player_id, message)
             elif message_type == "reset_game":
@@ -548,7 +552,7 @@ class WerewolfHub:
 
         room.pending_actions.discard(player_id)
         if not room.pending_actions:
-            self._add_system_chat(room, f"All actions submitted for {role}. Waiting for timer.")
+            return
 
     def _action_doppelganger(self, room: Room, player_id: str, message: Dict[str, Any]) -> None:
         target_id = self._require_player_target(room, message, player_id, key="target_player_id")
@@ -698,11 +702,41 @@ class WerewolfHub:
         target = message.get("target_player_id")
         if target is not None and target != "" and target not in room.players:
             raise GameError("Vote target is not in this room.")
+        if target == player_id:
+            raise GameError("You cannot vote for yourself.")
 
         room.votes[player_id] = target if target else None
 
-        if len(room.votes) == len(room.players):
-            self._resolve_votes(room)
+    def _ringring_vote(self, room: Room, player_id: str) -> None:
+        self._require_host(room, player_id)
+        if room.phase != "day":
+            raise GameError("Voting is only allowed during day.")
+        if room.pending_reveal_deadline is not None:
+            raise GameError("Votes are locked. Reveal is in progress.")
+
+        self._add_system_chat(room, f"{room.players[player_id].name} says: Ring ring! Please submit your votes.")
+
+    def _done_vote(self, room: Room, player_id: str) -> None:
+        self._require_host(room, player_id)
+        if room.phase != "day":
+            raise GameError("Voting is only allowed during day.")
+        if room.pending_reveal_deadline is not None:
+            raise GameError("Votes are locked. Reveal is in progress.")
+        if len(room.votes) != len(room.players):
+            raise GameError("Cannot end voting yet: not all players have submitted.")
+
+        top_targets = self._top_voted_targets(room)
+        if len(top_targets) >= 2:
+            raise GameError("Cannot end voting yet: there is a tie for top voted player.")
+
+        self._resolve_votes(room)
+
+    def _top_voted_targets(self, room: Room) -> List[str]:
+        vote_counter = Counter(target for target in room.votes.values() if target)
+        if not vote_counter:
+            return []
+        max_votes = max(vote_counter.values())
+        return [player_id for player_id, count in vote_counter.items() if count == max_votes]
 
     def _resolve_votes(self, room: Room) -> None:
         vote_counter = Counter(target for target in room.votes.values() if target)
@@ -729,16 +763,30 @@ class WerewolfHub:
             for player_id, final_role in room.current_roles.items()
             if final_role == "Werewolf"
         }
+        minions = {
+            player_id
+            for player_id, final_role in room.current_roles.items()
+            if final_role == "Minion"
+        }
         dead_tanners = [player_id for player_id in dead_set if room.current_roles.get(player_id) == "Tanner"]
 
         if dead_tanners:
             winner = "Tanner"
-        elif not werewolves:
-            winner = "Village" if not dead_set else "Werewolf Team"
-        elif dead_set & werewolves:
-            winner = "Village"
         else:
-            winner = "Werewolf Team"
+            dead_werewolves = dead_set & werewolves
+            alive_minions = minions - dead_set
+
+            if werewolves and minions:
+                if dead_werewolves:
+                    winner = "Village"
+                else:
+                    winner = "Werewolf Team"
+            elif werewolves:
+                winner = "Village" if dead_werewolves else "Werewolf Team"
+            elif minions:
+                winner = "Werewolf Team" if alive_minions else "Village"
+            else:
+                winner = "Village" if not dead_set else "Werewolf Team"
 
         room.phase = "day"
         room.pending_actions.clear()
@@ -783,6 +831,7 @@ class WerewolfHub:
         room.players[player_id].name = self.normalize_name(raw_name)
 
     def _reset_game(self, room: Room, player_id: str) -> None:
+        self._require_host(room, player_id)
         room.phase = "lobby"
         room.original_roles.clear()
         room.current_roles.clear()
@@ -895,6 +944,14 @@ class WerewolfHub:
 
         start_blockers = self._start_blockers(room)
         action_payload = self._action_payload_for_player(room, viewer_id)
+        top_voted_targets = self._top_voted_targets(room) if room.phase == "day" else []
+        all_votes_submitted = room.phase == "day" and len(room.votes) == len(room.players)
+        has_top_tie = len(top_voted_targets) >= 2
+
+        live_votes: Dict[str, Optional[str]] = {
+            voter_id: target_id
+            for voter_id, target_id in room.votes.items()
+        }
 
         return {
             "room": {
@@ -925,6 +982,9 @@ class WerewolfHub:
                 "pending_reveal_remaining_seconds": reveal_time_left,
                 "active_role_remaining_seconds": role_time_left,
                 "active_role_deadline_epoch": room.active_role_deadline,
+                "live_votes": live_votes if room.phase == "day" else {},
+                "all_votes_submitted": all_votes_submitted,
+                "has_top_vote_tie": has_top_tie,
             },
             "self": {
                 "id": viewer.id,
@@ -936,7 +996,15 @@ class WerewolfHub:
                 "can_configure": viewer.is_host and room.phase == "lobby",
                 "can_start": viewer.is_host and room.phase == "lobby" and not start_blockers,
                 "start_blockers": start_blockers,
-                "can_reset": room.phase != "night",
+                "can_reset": viewer.is_host and room.phase != "night",
+                "can_ringring": viewer.is_host and room.phase == "day" and room.pending_reveal_deadline is None,
+                "can_done_vote": (
+                    viewer.is_host
+                    and room.phase == "day"
+                    and room.pending_reveal_deadline is None
+                    and all_votes_submitted
+                    and not has_top_tie
+                ),
                 "vote_submitted": viewer_id in room.votes,
                 "action": action_payload,
             },
@@ -1009,6 +1077,7 @@ class WerewolfHub:
                 "players": [
                     {"id": player.id, "name": player.name}
                     for player in room.players.values()
+                    if player.id != viewer_id
                 ],
                 "allow_abstain": True,
             }

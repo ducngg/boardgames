@@ -51,8 +51,6 @@
           </div>
         </div>
 
-        <p id="status-line" class="status"></p>
-        <p id="discussion-line" class="status"></p>
         <p id="start-blockers" class="hint"></p>
 
         <div class="grid-two">
@@ -99,9 +97,16 @@
               <h3 id="notes-title">Private Notes</h3>
               <ul id="notes-list" class="list"></ul>
 
+              <p id="status-line" class="status alert alert-warning py-2 px-3"></p>
+              <p id="discussion-line" class="status alert alert-info py-2 px-3"></p>
               <h3 id="action-title">Action</h3>
+              <div id="vote-controls" class="row hidden">
+                <button id="ringring-btn" type="button">Ringring</button>
+                <button id="done-vote-btn" type="button">Done</button>
+              </div>
               <div id="state-notice" class="alert alert-secondary py-2 px-3" role="status"></div>
               <div id="action-box" class="panel"></div>
+              <ul id="live-votes" class="list"></ul>
             </div>
           </div>
         </div>

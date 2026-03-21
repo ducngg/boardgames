@@ -194,6 +194,14 @@ button:disabled {
   margin-top: 4px;
 }
 
+#vote-controls {
+  margin: 6px 0;
+}
+
+#live-votes {
+  margin-top: 8px;
+}
+
 .list {
   margin: 0;
   padding-left: 18px;

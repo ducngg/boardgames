@@ -49,6 +49,8 @@ const I18N = {
     "button.send": "Send",
     "button.submit": "Submit",
     "button.submitVote": "Submit Vote",
+    "button.ringring": "Ringring",
+    "button.doneVote": "Done",
     "status.room": "Room",
     "status.roomTitle": "Room: {roomId}",
     "status.phase": "Phase: {phase}",
@@ -64,7 +66,7 @@ const I18N = {
     "notice.passive": "Your role action has been completed.",
     "notice.skipped": "Your action was skipped (timer ended).",
     "notice.vote": "Vote now.",
-    "notice.voteDone": "Vote submitted. Waiting for others.",
+    "notice.voteDone": "Vote submitted. You can still change it.",
     "notice.reveal": "Round ended. Check result details.",
     "notice.lobby": "Waiting in lobby.",
     "phase.lobby": "Lobby",
@@ -83,6 +85,7 @@ const I18N = {
     "section.action": "Action",
     "section.chat": "Chat",
     "section.result": "Result",
+    "section.liveVotes": "Current Votes",
     "self.you": "You: {name}{hostTag}",
     "self.youDefault": "You: -",
     "self.noRoleYet": "No role assigned yet.",
@@ -93,7 +96,7 @@ const I18N = {
     "tag.offline": "offline",
     "player.final": "final: {role}",
     "action.none": "No action required right now.",
-    "action.voteSubmitted": "Vote submitted. Waiting for others.",
+    "action.voteSubmitted": "Vote submitted. You can still change it.",
     "action.prompt.doppelganger": "Choose one player to copy.",
     "action.prompt.werewolf_peek": "You are the lone werewolf. Peek one center card.",
     "action.prompt.seerCenter": "Choose one player OR two center cards.",
@@ -123,6 +126,7 @@ const I18N = {
     "winner.werewolfTeam": "Werewolf Team",
     "winner.tanner": "Tanner",
     "vote.none": "No vote",
+    "vote.row": "{voter} -> {target}",
     "error.socket": "Socket is not connected.",
     "error.roomRequired": "Room ID is required.",
     "error.nameRequired": "Name is required.",
@@ -163,6 +167,11 @@ const I18N = {
     "server.troubleTargetMissing": "Troublemaker target not found.",
     "server.voteDayOnly": "Voting is only allowed during day.",
     "server.voteTargetMissing": "Vote target is not in this room.",
+    "server.votesLocked": "Votes are locked. Reveal is in progress.",
+    "server.voteSelf": "You cannot vote for yourself.",
+    "server.voteCannotDoneNotAll": "Cannot end voting yet: not all players have submitted.",
+    "server.voteCannotDoneTie": "Cannot end voting yet: there is a tie for top voted player.",
+    "server.ringring": "{name} says: Ring ring! Please submit your votes.",
     "server.nameMustString": "Name must be a string.",
     "server.missingPlayerTarget": "Missing player target.",
     "server.cannotTargetSelf": "You cannot target yourself.",
@@ -191,7 +200,6 @@ const I18N = {
     "server.timerEndedSkipped": "{role} timer ended. Skipped: {names}.",
     "server.timerEndedSimple": "{role} timer ended.",
     "server.timerEndedYourSkipped": "{role} timer ended. Your action was skipped.",
-    "server.allActionsSubmitted": "All actions submitted for {role}. Waiting for timer.",
     "server.votingResolved": "Voting resolved. Winner: {winner}.",
     "server.originalRole": "Original role: {role}.",
     "server.insomniacCheck": "Insomniac check: your final role is {role}.",
@@ -223,6 +231,8 @@ const I18N = {
     "button.send": "Gửi",
     "button.submit": "Xác nhận",
     "button.submitVote": "Gửi phiếu",
+    "button.ringring": "Ringring",
+    "button.doneVote": "Chốt phiếu",
     "status.room": "Phòng",
     "status.roomTitle": "Phòng: {roomId}",
     "status.phase": "Giai đoạn: {phase}",
@@ -238,7 +248,7 @@ const I18N = {
     "notice.passive": "Hành động vai của bạn đã hoàn tất.",
     "notice.skipped": "Hành động của bạn đã bị bỏ qua (hết giờ).",
     "notice.vote": "Hãy bỏ phiếu ngay.",
-    "notice.voteDone": "Đã gửi phiếu. Đang chờ người khác.",
+    "notice.voteDone": "Đã gửi phiếu. Bạn vẫn có thể đổi phiếu.",
     "notice.reveal": "Ván đã kết thúc. Xem chi tiết kết quả.",
     "notice.lobby": "Đang chờ trong sảnh.",
     "phase.lobby": "Sảnh",
@@ -257,6 +267,7 @@ const I18N = {
     "section.action": "Hành động",
     "section.chat": "Chat",
     "section.result": "Kết quả",
+    "section.liveVotes": "Phiếu hiện tại",
     "self.you": "Bạn: {name}{hostTag}",
     "self.youDefault": "Bạn: -",
     "self.noRoleYet": "Chưa được chia vai.",
@@ -267,7 +278,7 @@ const I18N = {
     "tag.offline": "mất kết nối",
     "player.final": "vai cuối: {role}",
     "action.none": "Hiện tại bạn không cần hành động.",
-    "action.voteSubmitted": "Đã gửi phiếu. Đang chờ người khác.",
+    "action.voteSubmitted": "Đã gửi phiếu. Bạn vẫn có thể đổi phiếu.",
     "action.prompt.doppelganger": "Chọn 1 người để sao chép.",
     "action.prompt.werewolf_peek": "Bạn là ma sói đơn độc. Hãy xem 1 lá giữa.",
     "action.prompt.seerCenter": "Chọn 1 người hoặc 2 lá giữa.",
@@ -297,6 +308,7 @@ const I18N = {
     "winner.werewolfTeam": "Phe Ma Sói",
     "winner.tanner": "Chán Đời",
     "vote.none": "Không bỏ phiếu",
+    "vote.row": "{voter} -> {target}",
     "error.socket": "Socket chưa kết nối.",
     "error.roomRequired": "Cần nhập mã phòng.",
     "error.nameRequired": "Cần nhập tên.",
@@ -337,6 +349,11 @@ const I18N = {
     "server.troubleTargetMissing": "Không tìm thấy mục tiêu của Kẻ Gây Rối.",
     "server.voteDayOnly": "Chỉ được bỏ phiếu vào ban ngày.",
     "server.voteTargetMissing": "Mục tiêu bỏ phiếu không nằm trong phòng.",
+    "server.votesLocked": "Phiếu đã bị khóa. Đang chờ lật kết quả.",
+    "server.voteSelf": "Bạn không thể tự bỏ phiếu cho mình.",
+    "server.voteCannotDoneNotAll": "Chưa thể chốt phiếu: chưa đủ tất cả người chơi gửi phiếu.",
+    "server.voteCannotDoneTie": "Chưa thể chốt phiếu: đang hòa ở vị trí phiếu cao nhất.",
+    "server.ringring": "{name} nhắc: Ring ring! Mọi người mau bỏ phiếu.",
     "server.nameMustString": "Tên phải là chuỗi ký tự.",
     "server.missingPlayerTarget": "Thiếu mục tiêu người chơi.",
     "server.cannotTargetSelf": "Bạn không thể chọn chính mình.",
@@ -365,7 +382,6 @@ const I18N = {
     "server.timerEndedSkipped": "Hết giờ {role}. Bỏ qua: {names}.",
     "server.timerEndedSimple": "Hết giờ {role}.",
     "server.timerEndedYourSkipped": "Hết giờ {role}. Hành động của bạn đã bị bỏ qua.",
-    "server.allActionsSubmitted": "Đã nộp đủ hành động cho {role}. Đang chờ hết giờ.",
     "server.votingResolved": "Đã chốt bỏ phiếu. Bên thắng: {winner}.",
     "server.originalRole": "Vai gốc: {role}.",
     "server.insomniacCheck": "Mất Ngủ kiểm tra: vai cuối của bạn là {role}.",
@@ -416,7 +432,11 @@ const SERVER_TEXT_KEYS = {
   "Troublemaker cannot target themselves.": "server.troubleNoSelf",
   "Troublemaker target not found.": "server.troubleTargetMissing",
   "Voting is only allowed during day.": "server.voteDayOnly",
+  "Votes are locked. Reveal is in progress.": "server.votesLocked",
   "Vote target is not in this room.": "server.voteTargetMissing",
+  "You cannot vote for yourself.": "server.voteSelf",
+  "Cannot end voting yet: not all players have submitted.": "server.voteCannotDoneNotAll",
+  "Cannot end voting yet: there is a tie for top voted player.": "server.voteCannotDoneTie",
   "Name must be a string.": "server.nameMustString",
   "Missing player target.": "server.missingPlayerTarget",
   "You cannot target yourself.": "server.cannotTargetSelf",
@@ -454,6 +474,7 @@ const state = {
   playerId: "",
   current: null,
   language: getInitialLanguage(),
+  configDraft: null,
   jumpscareToken: "",
   jumpscareAudio: null,
 };
@@ -484,6 +505,10 @@ const selfName = document.getElementById("self-name");
 const selfRole = document.getElementById("self-role");
 const notesList = document.getElementById("notes-list");
 const actionBox = document.getElementById("action-box");
+const voteControls = document.getElementById("vote-controls");
+const ringringButton = document.getElementById("ringring-btn");
+const doneVoteButton = document.getElementById("done-vote-btn");
+const liveVotes = document.getElementById("live-votes");
 const chatLog = document.getElementById("chat-log");
 const chatInput = document.getElementById("chat-input");
 const chatSend = document.getElementById("chat-send");
@@ -620,11 +645,6 @@ function translateServerText(message) {
     return t("server.timerEndedSimple", { role: roleLabel(match[1]) });
   }
 
-  match = message.match(/^All actions submitted for ([A-Za-z]+)\. Waiting for timer\.$/);
-  if (match) {
-    return t("server.allActionsSubmitted", { role: roleLabel(match[1]) });
-  }
-
   match = message.match(/^Voting resolved\. Winner: (.+)\.$/);
   if (match) {
     return t("server.votingResolved", { winner: winnerLabel(match[1]) });
@@ -695,6 +715,11 @@ function translateServerText(message) {
     return t("server.resetBy", { name: match[1] });
   }
 
+  match = message.match(/^(.+) says: Ring ring! Please submit your votes\.$/);
+  if (match) {
+    return t("server.ringring", { name: match[1] });
+  }
+
   return replaceRoleWords(message);
 }
 
@@ -734,6 +759,8 @@ function applyStaticTranslations() {
   saveConfigButton.textContent = t("button.saveConfig");
   startButton.textContent = t("button.start");
   resetButton.textContent = t("button.reset");
+  ringringButton.textContent = t("button.ringring");
+  doneVoteButton.textContent = t("button.doneVote");
   chatSend.textContent = t("button.send");
 
   if (!state.current) {
@@ -795,6 +822,7 @@ function connect() {
   state.roomId = roomId;
   state.playerName = playerName;
   state.current = null;
+  state.configDraft = null;
 
   const savedId = localStorage.getItem(idStorageKey(roomId, playerName));
   const protocol = location.protocol === "https:" ? "wss" : "ws";
@@ -918,6 +946,10 @@ function renderState() {
   const room = state.current.room;
   const self = state.current.self;
 
+  if (!self.can_configure) {
+    state.configDraft = null;
+  }
+
   statusTitle.textContent = t("status.roomTitle", { roomId: room.id });
   renderStatusLine(room);
   renderStateNotice(room, self);
@@ -932,9 +964,31 @@ function renderState() {
   renderPlayers(room);
   renderSelfState(self);
   renderAction(self.action, self.vote_submitted);
+  renderVoteControls(room, self);
+  renderLiveVotes(room);
   renderChat(room.chat_log || []);
   renderResult(room.result, room.center_cards, room.action_history);
   maybeTriggerJumpscare(room, self);
+}
+
+function updateConfigDraftFromInputs() {
+  if (!state.current || !state.current.self?.can_configure) {
+    return;
+  }
+
+  const roleInputs = configGrid.querySelectorAll("input[data-role]");
+  const roles = {};
+  for (const input of roleInputs) {
+    const role = input.dataset.role;
+    roles[role] = Number(input.value || 0);
+  }
+
+  state.configDraft = {
+    roomId: state.current.room.id,
+    roles,
+    timer_seconds: Number(timerInput.value || 0),
+    discussion_timer_seconds: Number(discussionTimerInput.value || 0),
+  };
 }
 
 function renderStatusLine(room) {
@@ -951,6 +1005,7 @@ function renderStatusLine(room) {
   const discussionSeconds = getDiscussionRemainingSeconds(room);
   if (room.phase === "day") {
     const pendingRevealSeconds = Number(room.pending_reveal_remaining_seconds ?? 0);
+    discussionLine.classList.remove("hidden");
     if (pendingRevealSeconds > 0) {
       discussionLine.textContent = t("status.revealIn", { seconds: pendingRevealSeconds });
       discussionLine.classList.remove("text-primary");
@@ -966,6 +1021,7 @@ function renderStatusLine(room) {
     }
   } else {
     discussionLine.textContent = "";
+    discussionLine.classList.add("hidden");
     discussionLine.classList.remove("text-primary", "text-danger", "fw-bold");
   }
 }
@@ -996,6 +1052,11 @@ function renderRoleConfig(room, self) {
   const configuredRoles = room.configured_roles || {};
   const roleNames = Object.keys(constraints);
 
+  const draft =
+    showHostEditor && state.configDraft && state.configDraft.roomId === room.id
+      ? state.configDraft
+      : null;
+
   for (const role of roleNames) {
     const limits = constraints[role];
 
@@ -1010,7 +1071,9 @@ function renderRoleConfig(room, self) {
     input.step = "1";
     input.dataset.role = role;
     input.className = "count-input";
-    input.value = String(configuredRoles[role] ?? 0);
+    const draftValue = draft && draft.roles ? draft.roles[role] : undefined;
+    input.value = String(draftValue ?? configuredRoles[role] ?? 0);
+    input.addEventListener("input", updateConfigDraftFromInputs);
 
     const decreaseButton = createButton("-", () => {
       adjustRoleCount(input, -1, limits.min, limits.max);
@@ -1032,8 +1095,12 @@ function renderRoleConfig(room, self) {
     configGrid.appendChild(controls);
   }
 
-  timerInput.value = String(room.role_timer_seconds ?? 12);
-  discussionTimerInput.value = String(room.discussion_timer_seconds ?? 90);
+  timerInput.value = String(draft?.timer_seconds ?? room.role_timer_seconds ?? 12);
+  discussionTimerInput.value = String(
+    draft?.discussion_timer_seconds ?? room.discussion_timer_seconds ?? 90,
+  );
+  timerInput.oninput = updateConfigDraftFromInputs;
+  discussionTimerInput.oninput = updateConfigDraftFromInputs;
 
   const summary = t("config.summary", {
     configured: room.configured_role_total,
@@ -1167,16 +1234,15 @@ function renderAction(action, voteSubmitted) {
     return;
   }
 
+  const prompt = document.createElement("p");
+  prompt.textContent = localizedActionPrompt(action);
+  actionBox.appendChild(prompt);
+
   if (action.kind === "vote" && voteSubmitted) {
     const text = document.createElement("p");
     text.textContent = t("action.voteSubmitted");
     actionBox.appendChild(text);
-    return;
   }
-
-  const prompt = document.createElement("p");
-  prompt.textContent = localizedActionPrompt(action);
-  actionBox.appendChild(prompt);
 
   if (action.kind === "doppelganger" || action.kind === "robber") {
     const select = createPlayerSelect(action.players);
@@ -1318,12 +1384,61 @@ function renderAction(action, voteSubmitted) {
       select.appendChild(option);
     }
 
+    const selfId = state.current?.self?.id;
+    const currentVote = selfId && state.current?.room?.live_votes
+      ? state.current.room.live_votes[selfId]
+      : undefined;
+    if (currentVote) {
+      select.value = currentVote;
+    }
+
     const button = createButton(t("button.submitVote"), () => {
       sendMessage({ type: "vote", target_player_id: select.value || null });
     });
 
     actionBox.appendChild(select);
     actionBox.appendChild(button);
+  }
+}
+
+function renderVoteControls(room, self) {
+  const show = room.phase === "day" && (self.can_ringring || self.can_done_vote || self.is_host);
+  voteControls.classList.toggle("hidden", !show);
+
+  if (!show) {
+    return;
+  }
+
+  ringringButton.disabled = !self.can_ringring;
+  doneVoteButton.disabled = !self.can_done_vote;
+}
+
+function renderLiveVotes(room) {
+  liveVotes.innerHTML = "";
+
+  if (room.phase !== "day") {
+    return;
+  }
+
+  const title = document.createElement("li");
+  title.textContent = `${t("section.liveVotes")}:`;
+  liveVotes.appendChild(title);
+
+  const playersById = new Map((room.players || []).map((player) => [player.id, player.name]));
+  const votes = room.live_votes || {};
+
+  for (const player of room.players || []) {
+    const votedTargetId = Object.prototype.hasOwnProperty.call(votes, player.id) ? votes[player.id] : undefined;
+    const targetLabel =
+      votedTargetId === undefined
+        ? "..."
+        : votedTargetId
+          ? playersById.get(votedTargetId) || t("vote.none")
+          : t("vote.none");
+
+    const item = document.createElement("li");
+    item.textContent = t("vote.row", { voter: player.name, target: targetLabel });
+    liveVotes.appendChild(item);
   }
 }
 
@@ -1379,6 +1494,7 @@ function adjustRoleCount(input, delta, min, max) {
   const currentValue = Number(input.value || 0);
   const next = Math.max(min, Math.min(max, currentValue + delta));
   input.value = String(next);
+  updateConfigDraftFromInputs();
 }
 
 function renderChat(chatItems) {
@@ -1477,8 +1593,8 @@ function ensureJumpscareOverlay() {
   const image = document.createElement("img");
   image.src = "/assets/werewolf-jumpscare-1.png";
   image.alt = "Werewolf jumpscare";
-  image.style.maxWidth = "96vw";
-  image.style.maxHeight = "96vh";
+  image.style.maxWidth = "500vw";
+  image.style.maxHeight = "500vh";
   image.style.objectFit = "contain";
 
   overlay.appendChild(image);
@@ -1495,25 +1611,48 @@ function maybeTriggerJumpscare(room, self) {
     return;
   }
 
-  if (room.result.winner !== "Werewolf Team") {
+  if (!self) {
     return;
   }
 
-  if (!self || self.final_role === "Werewolf") {
+  const winner = room.result.winner;
+  const resolvedRole = String(self.final_role || self.original_role || "").trim();
+  const isWerewolfSide = resolvedRole === "Werewolf" || resolvedRole === "Minion";
+
+  let imagePath = "";
+  let audioPath = "";
+
+  if (winner === "Werewolf Team") {
+    if (isWerewolfSide) {
+      return;
+    }
+    imagePath = "/assets/werewolf-jumpscare-1.png";
+    audioPath = "/assets/werewolf-jumpscare-1.mp3";
+  } else if (winner === "Village") {
+    if (!isWerewolfSide) {
+      return;
+    }
+    imagePath = "/assets/mid-jumpscare.png";
+    audioPath = "/assets/mid-jumpscare.mp3";
+  } else {
     return;
   }
 
-  const token = `${room.id}:${self.id}:${room.result.winner}:${Object.keys(room.result.votes || {}).length}`;
+  const token = `${room.id}:${self.id}:${winner}:${Object.keys(room.result.votes || {}).length}`;
   if (state.jumpscareToken === token) {
     return;
   }
   state.jumpscareToken = token;
 
   const overlay = ensureJumpscareOverlay();
+  const overlayImage = overlay.querySelector("img");
+  if (overlayImage) {
+    overlayImage.src = imagePath;
+  }
   overlay.style.display = "flex";
 
-  if (!state.jumpscareAudio) {
-    state.jumpscareAudio = new Audio("/assets/werewolf-jumpscare-1.mp3");
+  if (!state.jumpscareAudio || !state.jumpscareAudio.src.endsWith(audioPath)) {
+    state.jumpscareAudio = new Audio(audioPath);
     state.jumpscareAudio.preload = "auto";
   }
 
@@ -1551,6 +1690,14 @@ startButton.addEventListener("click", () => {
 
 resetButton.addEventListener("click", () => {
   sendMessage({ type: "reset_game" });
+});
+
+ringringButton.addEventListener("click", () => {
+  sendMessage({ type: "ringring" });
+});
+
+doneVoteButton.addEventListener("click", () => {
+  sendMessage({ type: "done_vote" });
 });
 
 chatSend.addEventListener("click", () => {
