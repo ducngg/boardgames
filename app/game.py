@@ -325,11 +325,13 @@ class WerewolfHub:
         random.shuffle(role_pool)
 
         room.original_roles.clear()
+        room.effective_roles.clear()
         room.current_roles.clear()
         room.center_cards.clear()
         room.votes.clear()
         room.result = None
         room.pending_actions.clear()
+        room.consumed_night_roles.clear()
         room.action_history.clear()
         room.turn_index = 0
         room.phase = "night"
@@ -345,6 +347,7 @@ class WerewolfHub:
             role = role_pool[index]
             room.players[assigned_player_id].original_role = role
             room.original_roles[assigned_player_id] = role
+            room.effective_roles[assigned_player_id] = role
             room.current_roles[assigned_player_id] = role
 
         room.center_cards = role_pool[len(player_ids):]
@@ -378,7 +381,7 @@ class WerewolfHub:
                 return
 
             role = room.night_order[room.turn_index]
-            actors = [player_id for player_id, assigned_role in room.original_roles.items() if assigned_role == role]
+            actors = self._actors_for_role(room, role)
 
             now = time.time()
             room.active_role_started_at = now
@@ -395,7 +398,7 @@ class WerewolfHub:
                 return
 
             if role == "Minion":
-                werewolves = self._players_with_original_role(room, "Werewolf")
+                werewolves = self._players_with_effective_role(room, "Werewolf")
                 werewolf_names = self._name_list(room, werewolves)
                 for actor in actors:
                     if werewolves:
@@ -448,13 +451,36 @@ class WerewolfHub:
                 room.notes.setdefault(actor, []).append(self._prompt_for_action_role(role, room))
             return
 
-    def _pending_actions_for_role(self, room: Room, role: str, actors: List[str]) -> set[str]:
+    def _actors_for_role(self, room: Room, role: str) -> List[str]:
+        actors: List[str] = []
+        for player_id in room.player_ids():
+            effective_role = room.effective_roles.get(player_id, room.original_roles.get(player_id))
+            if effective_role != role:
+                continue
+            consumed_roles = room.consumed_night_roles.get(player_id, set())
+            if role in consumed_roles:
+                continue
+            actors.append(player_id)
+        return actors
+
+    def _pending_actions_for_role(
+        self,
+        room: Room,
+        role: str,
+        actors: List[str],
+    ) -> Dict[str, Dict[str, Any]]:
         if role == "Drunk" and not room.center_cards:
             for actor in actors:
                 room.notes.setdefault(actor, []).append("No center cards configured. Drunk has no action.")
-            return set()
+            return {}
 
-        return set(actors)
+        return {
+            actor: {
+                "kind": "night_role",
+                "role": role,
+            }
+            for actor in actors
+        }
 
     def _start_werewolf_turn(self, room: Room, actors: List[str]) -> None:
         if len(actors) > 1:
@@ -472,7 +498,12 @@ class WerewolfHub:
             room.notes.setdefault(lone_wolf, []).append(
                 "You are the only werewolf. You may peek one center card."
             )
-            room.pending_actions = {lone_wolf}
+            room.pending_actions = {
+                lone_wolf: {
+                    "kind": "night_role",
+                    "role": "Werewolf",
+                }
+            }
             return
 
         room.notes.setdefault(lone_wolf, []).append(
@@ -506,8 +537,9 @@ class WerewolfHub:
             return
 
         if room.pending_actions:
-            pending_names = self._name_list(room, list(room.pending_actions))
-            for player_id in room.pending_actions:
+            pending_player_ids = list(room.pending_actions.keys())
+            pending_names = self._name_list(room, pending_player_ids)
+            for player_id in pending_player_ids:
                 room.notes.setdefault(player_id, []).append(
                     f"{role} timer ended. Your action was skipped."
                 )
@@ -531,44 +563,95 @@ class WerewolfHub:
         if room.active_role_deadline is not None and time.time() > room.active_role_deadline:
             raise GameError("This role timer has ended.")
 
-        role = room.turn_role
-        if role is None:
-            raise GameError("No active night role.")
+        action_context = room.pending_actions.get(player_id, {})
+        context_kind = action_context.get("kind")
 
-        if role == "Doppelganger":
-            self._action_doppelganger(room, player_id, message)
-        elif role == "Werewolf":
-            self._action_werewolf(room, player_id, message)
-        elif role == "Seer":
-            self._action_seer(room, player_id, message)
-        elif role == "Robber":
-            self._action_robber(room, player_id, message)
-        elif role == "Troublemaker":
-            self._action_troublemaker(room, player_id, message)
-        elif role == "Drunk":
-            self._action_drunk(room, player_id, message)
+        completed = True
+        if context_kind == "doppel_followup":
+            copied_role = action_context.get("copied_role")
+            if not isinstance(copied_role, str) or not copied_role:
+                raise GameError("No active night role.")
+            completed = self._action_doppel_followup(room, player_id, copied_role, message)
         else:
-            raise GameError(f"Role {role} does not accept actions.")
+            role = room.turn_role
+            if role is None:
+                raise GameError("No active night role.")
 
-        room.pending_actions.discard(player_id)
-        if not room.pending_actions:
+            if role == "Doppelganger":
+                completed = self._action_doppelganger(room, player_id, message)
+            elif role == "Werewolf":
+                self._action_werewolf(room, player_id, message)
+            elif role == "Seer":
+                self._action_seer(room, player_id, message)
+            elif role == "Robber":
+                self._action_robber(room, player_id, message)
+            elif role == "Troublemaker":
+                self._action_troublemaker(room, player_id, message)
+            elif role == "Drunk":
+                self._action_drunk(room, player_id, message)
+            else:
+                raise GameError(f"Role {role} does not accept actions.")
+
+        if completed:
+            room.pending_actions.pop(player_id, None)
+
+        if room.pending_actions:
             return
+        return
 
-    def _action_doppelganger(self, room: Room, player_id: str, message: Dict[str, Any]) -> None:
+    def _action_doppelganger(self, room: Room, player_id: str, message: Dict[str, Any]) -> bool:
         target_id = self._require_player_target(room, message, player_id, key="target_player_id")
-        copied_role = room.original_roles[target_id]
+        copied_role = room.current_roles[target_id]
+        room.effective_roles[player_id] = copied_role
         room.current_roles[player_id] = copied_role
         room.notes.setdefault(player_id, []).append(
             f"You copied {room.players[target_id].name} and became {copied_role}."
         )
-        room.notes[player_id].append("Simplified rule: copied role does not perform extra wake-up action.")
         self._add_action_history(
             room,
             f"{room.players[player_id].name} (Doppelganger) copied {room.players[target_id].name} and became {copied_role}.",
         )
+        if copied_role in {"Seer", "Robber", "Troublemaker", "Drunk"}:
+            self._consume_night_role(room, player_id, copied_role)
+            room.pending_actions[player_id] = {
+                "kind": "doppel_followup",
+                "copied_role": copied_role,
+            }
+            room.notes.setdefault(player_id, []).append(self._prompt_for_action_role(copied_role, room))
+            return False
+
+        return True
+
+    def _consume_night_role(self, room: Room, player_id: str, role: str) -> None:
+        room.consumed_night_roles.setdefault(player_id, set()).add(role)
+
+    def _action_doppel_followup(
+        self,
+        room: Room,
+        player_id: str,
+        copied_role: str,
+        message: Dict[str, Any],
+    ) -> bool:
+        if copied_role == "Seer":
+            self._action_seer(room, player_id, message)
+        elif copied_role == "Robber":
+            self._action_robber(room, player_id, message)
+        elif copied_role == "Troublemaker":
+            self._action_troublemaker(room, player_id, message)
+        elif copied_role == "Drunk":
+            self._action_drunk(room, player_id, message)
+        else:
+            return True
+
+        self._consume_night_role(room, player_id, copied_role)
+        self._add_action_history(
+            room,
+            f"{room.players[player_id].name} (Doppelganger) completed copied {copied_role} action immediately.",
+        )
+        return True
 
     def _action_werewolf(self, room: Room, player_id: str, message: Dict[str, Any]) -> None:
-        werewolves = self._players_with_original_role(room, "Werewolf")
+        werewolves = self._players_with_effective_role(room, "Werewolf")
         if len(werewolves) != 1 or werewolves[0] != player_id:
             raise GameError("Werewolf action is only for a lone werewolf.")
         if not room.center_cards:
@@ -595,7 +678,10 @@ class WerewolfHub:
             if target_player_id not in room.players:
                 raise GameError("Unknown player target.")
 
-            viewed_role = room.current_roles[target_player_id]
+            if room.original_roles.get(target_player_id) == "Doppelganger":
+                viewed_role = "Doppelganger"
+            else:
+                viewed_role = room.current_roles[target_player_id]
             room.notes.setdefault(player_id, []).append(
                 f"Seer saw {room.players[target_player_id].name}: {viewed_role}."
             )
@@ -732,19 +818,43 @@ class WerewolfHub:
         self._resolve_votes(room)
 
     def _top_voted_targets(self, room: Room) -> List[str]:
-        vote_counter = Counter(target for target in room.votes.values() if target)
+        return self._eliminated_targets_from_votes(room)
+
+    def _is_abstain_vote(self, target: Optional[str]) -> bool:
+        return target in {None, "", "No vote"}
+
+    def _eliminated_targets_from_votes(self, room: Room) -> List[str]:
+        vote_counter = Counter(room.votes.values())
         if not vote_counter:
             return []
+
         max_votes = max(vote_counter.values())
-        return [player_id for player_id, count in vote_counter.items() if count == max_votes]
+        top_targets = [target for target, count in vote_counter.items() if count == max_votes]
+        has_top_abstain = any(self._is_abstain_vote(target) for target in top_targets)
+
+        if has_top_abstain:
+            non_abstain_counter = Counter(
+                target
+                for target in room.votes.values()
+                if isinstance(target, str) and target in room.players
+            )
+            if not non_abstain_counter:
+                return []
+            second_max = max(non_abstain_counter.values())
+            return [
+                target
+                for target, count in non_abstain_counter.items()
+                if count == second_max
+            ]
+
+        return [
+            target
+            for target, count in vote_counter.items()
+            if count == max_votes and isinstance(target, str) and target in room.players
+        ]
 
     def _resolve_votes(self, room: Room) -> None:
-        vote_counter = Counter(target for target in room.votes.values() if target)
-        eliminated: List[str] = []
-
-        if vote_counter:
-            max_votes = max(vote_counter.values())
-            eliminated = [player_id for player_id, count in vote_counter.items() if count == max_votes]
+        eliminated: List[str] = self._eliminated_targets_from_votes(room)
 
         hunter_bonus: List[str] = []
         for eliminated_id in eliminated:
@@ -784,7 +894,8 @@ class WerewolfHub:
             elif werewolves:
                 winner = "Village" if dead_werewolves else "Werewolf Team"
             elif minions:
-                winner = "Werewolf Team" if alive_minions else "Village"
+                dead_minions = dead_set & minions
+                winner = "Village" if dead_minions else "Werewolf Team"
             else:
                 winner = "Village" if not dead_set else "Werewolf Team"
 
@@ -834,6 +945,7 @@ class WerewolfHub:
         self._require_host(room, player_id)
         room.phase = "lobby"
         room.original_roles.clear()
+        room.effective_roles.clear()
         room.current_roles.clear()
         room.center_cards.clear()
         room.turn_index = 0
@@ -843,6 +955,7 @@ class WerewolfHub:
         room.discussion_deadline = None
         room.pending_reveal_deadline = None
         room.pending_actions.clear()
+        room.consumed_night_roles.clear()
         room.action_history.clear()
         room.votes.clear()
         room.chat_log.clear()
@@ -857,6 +970,13 @@ class WerewolfHub:
 
     def _players_with_original_role(self, room: Room, role: str) -> List[str]:
         return [player_id for player_id, assigned_role in room.original_roles.items() if assigned_role == role]
+
+    def _players_with_effective_role(self, room: Room, role: str) -> List[str]:
+        return [
+            player_id
+            for player_id in room.player_ids()
+            if room.effective_roles.get(player_id, room.original_roles.get(player_id)) == role
+        ]
 
     def _name_list(self, room: Room, player_ids: List[str]) -> str:
         if not player_ids:
@@ -1014,8 +1134,17 @@ class WerewolfHub:
         if room.pending_reveal_deadline is not None:
             return None
 
-        if room.phase == "night" and viewer_id in room.pending_actions and room.turn_role:
-            role = room.turn_role
+        if room.phase == "night" and viewer_id in room.pending_actions:
+            action_context = room.pending_actions.get(viewer_id, {})
+            context_kind = action_context.get("kind")
+            if context_kind == "doppel_followup":
+                copied_role = action_context.get("copied_role")
+                role = copied_role if isinstance(copied_role, str) else None
+            else:
+                role = room.turn_role
+            if role is None:
+                return None
+
             selectable_players = [
                 {"id": player.id, "name": player.name}
                 for player in room.players.values()

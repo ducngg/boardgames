@@ -1312,6 +1312,9 @@ function renderAction(action, voteSubmitted) {
 
     const centerOne = createCenterSelect(action.center_indices);
     const centerTwo = createCenterSelect(action.center_indices);
+    if (centerTwo.options.length > 1) {
+      centerTwo.selectedIndex = 1;
+    }
 
     const centerRow = document.createElement("div");
     centerRow.className = "row hidden";
@@ -1351,6 +1354,9 @@ function renderAction(action, voteSubmitted) {
   if (action.kind === "troublemaker") {
     const selectA = createPlayerSelect(action.players);
     const selectB = createPlayerSelect(action.players);
+    if (selectB.options.length > 1) {
+      selectB.selectedIndex = 1;
+    }
     const row = document.createElement("div");
     row.className = "row";
     row.appendChild(selectA);

@@ -66,6 +66,7 @@ class Room:
     created_at: float = field(default_factory=time.time)
     phase: str = "lobby"
     original_roles: Dict[str, str] = field(default_factory=dict)
+    effective_roles: Dict[str, str] = field(default_factory=dict)
     current_roles: Dict[str, str] = field(default_factory=dict)
     center_cards: List[str] = field(default_factory=list)
     configured_roles: Dict[str, int] = field(default_factory=default_role_config)
@@ -78,7 +79,8 @@ class Room:
     turn_index: int = 0
     active_role_started_at: Optional[float] = None
     active_role_deadline: Optional[float] = None
-    pending_actions: Set[str] = field(default_factory=set)
+    pending_actions: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    consumed_night_roles: Dict[str, Set[str]] = field(default_factory=dict)
     notes: Dict[str, List[str]] = field(default_factory=dict)
     action_history: List[str] = field(default_factory=list)
     votes: Dict[str, Optional[str]] = field(default_factory=dict)
