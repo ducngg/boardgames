@@ -1,3 +1,5 @@
+Vibed btw
+
 # One Night Werewolf (FastAPI)
 
 Simple MVP for a 2-way real-time One Night Werewolf room with up to 12 players.
@@ -90,5 +92,4 @@ Server websocket message types:
 
 - Room join is locked once a game starts; host can reset to lobby.
 - Maximum 12 players enforced.
-- Doppelganger action is simplified: copy only, no chained wake action.
 - Exactly 3 center cards are always used (`N+3` total roles for `N` players).
